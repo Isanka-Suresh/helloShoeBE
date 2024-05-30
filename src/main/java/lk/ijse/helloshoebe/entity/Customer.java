@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,10 +23,12 @@ public class Customer {
     private String customerName;
     @Enumerated(EnumType.STRING)
     private Gender gender;
+    @Temporal(TemporalType.DATE)
     private Date joinedDate;
     @Enumerated(EnumType.STRING)
     private LoyaltyLevel level;
-    private Integer totalPoints;
+    private int totalPoints;
+    @Temporal(TemporalType.DATE)
     private Date dob;
     private String contactNumber;
     @Column(unique = true)
@@ -35,4 +38,7 @@ public class Customer {
     private String addressCity;
     private String addressState;
     private String postalCode;
+
+    @OneToMany(mappedBy = "customer",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Sales> salesList;
 }
