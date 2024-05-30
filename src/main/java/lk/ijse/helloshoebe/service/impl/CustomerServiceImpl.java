@@ -2,7 +2,9 @@ package lk.ijse.helloshoebe.service.impl;
 
 import lk.ijse.helloshoebe.dto.CustomerDTO;
 import lk.ijse.helloshoebe.entity.Customer;
+import lk.ijse.helloshoebe.exception.DuplicateException;
 import lk.ijse.helloshoebe.exception.InvalidDataException;
+import lk.ijse.helloshoebe.exception.NotFoundException;
 import lk.ijse.helloshoebe.repo.CustomerRepo;
 import lk.ijse.helloshoebe.service.CustomerService;
 import lk.ijse.helloshoebe.util.IdGenerator;
@@ -25,43 +27,57 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerDTO saveCustomer(CustomerDTO customerDTO) {
-        customerDTO.setCustomerId(IdGenerator.generateId());
-        customerRepo.save(modelMapper.map(customerDTO, Customer.class));
-        return customerDTO;
+        try {
+            customerDTO.setCustomerId(IdGenerator.generateId());
+            customerRepo.save(modelMapper.map(customerDTO, Customer.class));
+            return customerDTO;
+        }catch (Exception e){
+            throw new DuplicateException("Customer is already there");
+        }
     }
 
     @Override
     public void deleteCustomer(String customerId) {
-        customerRepo.deleteById(customerId);
+        try{
+            if (customerRepo.existsById(customerId)){
+                customerRepo.deleteById(customerId);
+            }
+        }catch (Exception e){
+            throw new NotFoundException("Customer does not Exist");
+        }
     }
 
     @Override
     public CustomerDTO getSelectedCustomer(String customerId) {
-        return modelMapper.map(customerRepo.getReferenceById(customerId), CustomerDTO.class);
+        try{
+            if (customerRepo.existsById(customerId)){
+                return modelMapper.map(customerRepo.findById(customerId), CustomerDTO.class);
+            }
+            throw new NotFoundException("Customer does not Exist");
+        }catch (Exception e){
+            throw new NotFoundException("Customer does not Exist");
+        }
     }
 
     @Override
     public List<CustomerDTO> getAllCustomers() {
-        return modelMapper.map(customerRepo.findAll(), List.class);
+        try {
+            return modelMapper.map(customerRepo.findAll(), List.class);
+        }catch (Exception e){
+            throw new InvalidDataException("Relevant Data Can't be found");
+        }
     }
 
     @Override
     public CustomerDTO updateCustomer(CustomerDTO customerDTO) {
-        Customer customer = customerRepo.findById(customerDTO.getCustomerId()).orElseThrow(()->new InvalidDataException("Customer Not Found"));
-        customer.setCustomerName(customerDTO.getCustomerName());
-        customer.setGender(customerDTO.getGender());
-        customer.setJoinedDate(customerDTO.getJoinedDate());
-        customer.setLevel(customerDTO.getLevel());
-        customer.setTotalPoints(customerDTO.getTotalPoints());
-        customer.setDob(customerDTO.getDob());
-        customer.setContactNumber(customerDTO.getContactNumber());
-        customer.setEmail(customerDTO.getEmail());
-        customer.setBuildingNumberOrName(customerDTO.getBuildingNumberOrName());
-        customer.setAddressLane(customer.getAddressLane());
-        customer.setAddressCity(customerDTO.getAddressCity());
-        customer.setAddressState(customerDTO.getAddressState());
-        customer.setPostalCode(customerDTO.getPostalCode());
-
-        return modelMapper.map(customerRepo.save(customer), CustomerDTO.class);
+        if (customerRepo.existsById(customerDTO.getCustomerId())){
+            try {
+                Customer customer = modelMapper.map(customerDTO, Customer.class);
+                return modelMapper.map(customerRepo.save(customer),CustomerDTO.class);
+            }catch (Exception e){
+                throw new DuplicateException("Customer Duplicate Data Entered");
+            }
+        }
+        throw new NotFoundException("Customer Not Found");
     }
 }
